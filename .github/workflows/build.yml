@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - main  # Add this if your default branch is 'main'
 
 jobs:
   build-windows:
@@ -16,7 +15,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: 3.13.3
 
     - name: Install dependencies
       run: |
@@ -28,7 +27,7 @@ jobs:
         pyinstaller Script/Main.py --onefile --noconsole --name ReconcileApp
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v3.1.2
       with:
         name: ReconcileApp.exe
         path: dist/ReconcileApp.exe
