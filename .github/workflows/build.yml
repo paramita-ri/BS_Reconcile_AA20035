@@ -43,16 +43,16 @@ jobs:
     - name: Create DMG package
       run: |
         brew install create-dmg
-        mkdir -p pkgroot/Applications
-        cp -r dist/ReconcileApp.app pkgroot/Applications/
-        create-dmg \
-          --volname "ReconcileApp Installer" \
-          --window-size 800 400 \
-          --icon "ReconcileApp.app" 200 190 \
-          --app-drop-link 600 190 \
-          --no-internet-enable \
-          "dist/ReconcileApp.dmg" \
-          "pkgroot/"
+        mkdir -p dmg_contents/Applications
+        cp -r dist/ReconcileApp.app dmg_contents/Applications/
+        
+        # Create simple DMG without fancy Finder settings
+        hdiutil create \
+          -volname "ReconcileApp" \
+          -srcfolder dmg_contents \
+          -ov \
+          -format UDZO \
+          "dist/ReconcileApp.dmg"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
