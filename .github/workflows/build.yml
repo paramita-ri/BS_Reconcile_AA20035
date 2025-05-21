@@ -40,19 +40,17 @@ jobs:
           exit 1
         fi
 
-    - name: Create DMG package (optional)
+    - name: Create DMG package
       run: |
         brew install create-dmg
         mkdir -p pkgroot/Applications
         cp -r dist/ReconcileApp.app pkgroot/Applications/
         create-dmg \
           --volname "ReconcileApp Installer" \
-          --window-pos 200 120 \
           --window-size 800 400 \
-          --icon-size 100 \
           --icon "ReconcileApp.app" 200 190 \
-          --hide-extension "ReconcileApp.app" \
           --app-drop-link 600 190 \
+          --no-internet-enable \
           "dist/ReconcileApp.dmg" \
           "pkgroot/"
 
