@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -22,6 +22,9 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
         pip check  # Check for dependency issues
+        
+    - name: Debug - List files
+      run: dir /s
 
     - name: Build executable
       run: |
@@ -31,7 +34,7 @@ jobs:
         )
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4
       with:
         name: ReconcileApp.exe
         path: <correct-path-to-artifact>
