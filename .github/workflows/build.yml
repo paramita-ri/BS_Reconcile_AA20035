@@ -39,7 +39,13 @@ jobs:
           find . -name "ReconcileApp*"
           exit 1
         fi
-
+    - name: Codesign application
+      run: |
+        codesign --deep --force --verbose --sign - "dist/ReconcileApp.app"
+    
+    # Verify the signature
+    codesign -dv --verbose=4 "dist/ReconcileApp.app"
+    spctl -a -t exec -vv "dist/ReconcileApp.app"
     - name: Create DMG package
       run: |
         brew install create-dmg
