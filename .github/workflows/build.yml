@@ -3,7 +3,7 @@ name: Build Windows Executable
 on:
   push:
     branches:
-      - master
+      - main  # or 'master' if that's your actual branch name
 
 jobs:
   build-windows:
@@ -15,19 +15,23 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.13.3
+        python-version: 3.11
 
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
         pip install pyinstaller
+        pip check  # Check for dependency issues
 
     - name: Build executable
       run: |
         pyinstaller Script/Main.py --onefile --noconsole --name ReconcileApp
+        if not exist dist\ReconcileApp.exe (
+            echo "Build failed: dist\ReconcileApp.exe not found" && exit 1
+        )
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3.1.2
       with:
         name: ReconcileApp.exe
-        path: dist/ReconcileApp.exe
+        path: <correct-path-to-artifact>
