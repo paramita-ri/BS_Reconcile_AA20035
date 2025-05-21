@@ -21,10 +21,10 @@ jobs:
       run: |
         pip install -r requirements.txt
         pip install pyinstaller
-        pip check  # Check for dependency issues
-        
+        pip check
+
     - name: Debug - List files
-      run: dir /s
+      run: Get-ChildItem -Recurse
 
     - name: Build executable
       run: |
@@ -37,4 +37,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ReconcileApp.exe
-        path: <correct-path-to-artifact>
+        path: dist/ReconcileApp.exe  # Make sure this matches your actual path
+
+    - name: Verify executable
+      run: Test-Path dist/ReconcileApp.exe
