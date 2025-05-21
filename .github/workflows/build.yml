@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - main  # Add this if your default branch is 'main'
 
 jobs:
   build-windows:
