@@ -23,21 +23,19 @@ jobs:
         pip install pyinstaller
         pip check
 
-    - name: Debug - List files
-      run: Get-ChildItem -Recurse
-
     - name: Build executable
+      shell: cmd  # Force using CMD instead of PowerShell
       run: |
         pyinstaller Script/Main.py --onefile --noconsole --name ReconcileApp
         if not exist dist\ReconcileApp.exe (
             echo "Build failed: dist\ReconcileApp.exe not found" && exit 1
         )
 
+    - name: Verify executable exists
+      run: Test-Path dist/ReconcileApp.exe
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ReconcileApp.exe
-        path: dist/ReconcileApp.exe  # Make sure this matches your actual path
-
-    - name: Verify executable
-      run: Test-Path dist/ReconcileApp.exe
+        path: dist/ReconcileApp.exe
