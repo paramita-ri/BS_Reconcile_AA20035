@@ -29,7 +29,7 @@ jobs:
         pyinstaller Script/Main.py \
           --onefile \
           --name ReconcileApp \
-          --windowed \  # This creates a .app bundle on macOS
+          --windowed \
           --osx-bundle-identifier "com.yourcompany.reconcileapp" \
           --log-level DEBUG
         
