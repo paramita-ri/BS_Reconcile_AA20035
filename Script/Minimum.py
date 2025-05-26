@@ -56,7 +56,7 @@ class Minimum():
         #drop row that has nan in critical column and left only column 
         #we want in aastar and gto05
         aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
-        gto05 = gto05.query("Refund.notna() and MRefundMG != 0")[['TS_ID', 'Vendor', 'Refund']]
+        gto05 = gto05.query("Refund.notna() and Refund != 0")[['TS_ID', 'Vendor', 'Refund']]
         balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
         
         mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
