@@ -1,0 +1,70 @@
+name: Build MacOS Application
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        pip check
+
+    - name: Build macOS executable
+      run: |
+        pyinstaller Script/Main.py \
+          --onefile \
+          --name ReconcileApp \
+          --windowed \
+          --osx-bundle-identifier "com.yourcompany.reconcileapp" \
+          --log-level DEBUG
+        
+        # Verify the build
+        if [ ! -f "dist/ReconcileApp" ]; then
+          echo "Build failed: dist/ReconcileApp not found"
+          find . -name "ReconcileApp*"
+          exit 1
+        fi
+    - name: Codesign application
+      run: |
+        codesign --deep --force --verbose --sign - "dist/ReconcileApp.app"
+    
+    # Verify the signature
+    codesign -dv --verbose=4 "dist/ReconcileApp.app"
+    spctl -a -t exec -vv "dist/ReconcileApp.app"
+    - name: Create DMG package
+      run: |
+        brew install create-dmg
+        mkdir -p dmg_contents/Applications
+        cp -r dist/ReconcileApp.app dmg_contents/Applications/
+        
+        # Create simple DMG without fancy Finder settings
+        hdiutil create \
+          -volname "ReconcileApp" \
+          -srcfolder dmg_contents \
+          -ov \
+          -format UDZO \
+          "dist/ReconcileApp.dmg"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: MacOS_Build
+        path: |
+          dist/ReconcileApp
+          dist/ReconcileApp.app
+          dist/*.dmg
