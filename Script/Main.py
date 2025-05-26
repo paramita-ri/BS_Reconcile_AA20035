@@ -130,7 +130,7 @@ class ReconciliationApp:
             # Step 2: Process AA data
             self.update_progress(30, "Processing AA data...")
             aa_process = AAProcess(AAcurrent_df, GTO05_df, period_date)
-            AAForCombine_df = aa_process.getAApivot()
+            AAPivot_df, AAForCombine_df = aa_process.getAApivot()
             
             # Step 3: Combine data
             self.update_progress(45, "Combining data...")
