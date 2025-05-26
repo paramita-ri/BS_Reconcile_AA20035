@@ -7,10 +7,11 @@ class Minimum():
             self.Balanced_df = Balance_df
             self.AAstar_df = AAstart_df
             self.GTO05_df = GTO_df
-            self.toFindminimum_df = None
+            self.MMG_df = None
+            self.Refund_df = None
             self.Minimum_df = None
             
-    def getToFindminimum_df(self):
+    def getMMG_df(self):
         
         balanced = self.Balanced_df.copy()
         aastar = self.AAstar_df.copy()
@@ -35,12 +36,40 @@ class Minimum():
         
         mergeMMG_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
         mergeMMG_df = mergeMMG_df.dropna(subset=['MMG', 'Vendor'])
+        self.MMG_df = mergeMMG_df
+        return self.MMG_df 
+    
+    def getRefund_df(self):
         
-        return mergeMMG_df 
+        balanced = self.Balanced_df.copy()
+        aastar = self.AAstar_df.copy()
+        gto05 = self.GTO05_df.copy()
+        #simplifie column name in aastar and gto05
+        aastar = aastar.rename(columns={
+            'MRI or Anacle TransactionID':'TS_ID'
+        })
+        gto05 = gto05.rename(columns={
+            'Reported GTO No.':'TS_ID',
+            'Customer':'Vendor',
+            'COGS Refund':'Refund'
+        })
+        #drop row that has nan in critical column and left only column 
+        #we want in aastar and gto05
+        aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
+        gto05 = gto05.query("Refund.notna() and MRefundMG != 0")[['TS_ID', 'Vendor', 'Refund']]
+        balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
+        
+        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
+        mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
+        
+        mergeRefund_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
+        mergeRefund_df = mergeRefund_df.dropna(subset=['Refund', 'Vendor'])
+        self.Refund_df = mergeRefund_df
+        return self.Refund_df 
           
     def getMinimum_df(self):
-        self.toFindminimum_df = self.getToFindminimum_df()
-        MMG_df = self.toFindminimum_df.copy()
+        mergeMMG = self.getMMG_df()
+        MMG_df = mergeMMG.copy()
         minimum_df = self.Balanced_df.copy()
         final_rows = []
 
