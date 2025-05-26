@@ -62,15 +62,6 @@ class ReconciliationApp:
         self.log_text.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.log_text.yview)
         
-        # Initialize variables
-        self.running = False
-        self.period_date = None
-        self.AAcurrent_df = None
-        self.AAprevious_df = None
-        self.AAStar_df = None
-        self.LastReconcile_df = None
-        self.GTO05_df = None
-        
         # Start checking the message queue
         self.root.after(100, self.process_queue)
     
