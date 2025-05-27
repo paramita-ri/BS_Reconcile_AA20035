@@ -65,26 +65,16 @@ class AAProcess():
 
         # Map Building values โดยใช้ Cost Center เป็น key
         fillColumn_df['Building'] = fillColumn_df['Cost Center'].map(building_mapping)
-        # Step 1: Ensure raw_df has only one row per Cost Center + Date + Amount
-        aacurrent_df_unique = aacurrent_df.drop_duplicates(subset=['Cost Center', 'Transaction Date', 'Amount'])
-
-        # Step 2: Merge
-        fillColumn_df = pd.merge(
-            fillColumn_df,
-            aacurrent_df_unique[['Cost Center', 'Transaction Date', 'Amount', 'Vendor / Customer Name']],
-            on=['Cost Center', 'Transaction Date', 'Amount'],
-            how='left'
-        )
 
 
         # เพิ่ม columns ด้วย empty values
-        fillColumn_df['Group'] = ""
-        fillColumn_df['Status/Reported GTO No.'] = ""
-        fillColumn_df['Remark'] = ""
-        fillColumn_df['Question'] = ""
+        fillColumn_df['Vendor'] = None
+        fillColumn_df['Group'] = None
+        fillColumn_df['Status/Reported GTO No.'] = None
+        fillColumn_df['Remark'] = None
+        fillColumn_df['Question'] = None
         
         fillColumn_df = fillColumn_df.rename(columns={'Amount': 'Total'})
-        fillColumn_df = fillColumn_df.rename(columns={'Vendor / Customer Name': 'Vendor'})
         # define column order
         column_order = [
             'Period', 'Cost Center', 'Building', 'LOB', 'Transaction Date',

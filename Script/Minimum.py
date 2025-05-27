@@ -163,5 +163,97 @@ class Minimum():
         return self.Minimum_df
 
 
+    def getCOGSRefund(self):
+        mergerefund = self.getRefund_df()
+        Refund_df = mergerefund.copy()
+        minimum_df = self.Balanced_df.copy()
+        final_rows = []
 
-        
+        if 'Total' not in minimum_df.columns:
+            return minimum_df
+
+        Refund_df['MMG'] = Refund_df['MMG'].round(2)
+        minimum_df['Cost Center'] = minimum_df['Cost Center'].astype(str).apply(lambda x: x.zfill(5))
+        Refund_df['Cost Center'] = Refund_df['Cost Center'].astype(str).apply(lambda x: x.zfill(5))
+
+        if 'LOB' in minimum_df.columns:
+            minimum_df['LOB'] = minimum_df['LOB'].astype(str).apply(lambda x: x.zfill(5))
+
+        for cost_center, group_df in minimum_df.groupby('Cost Center'):
+            group_df = group_df.reset_index(drop=True)
+            mmg_rows = Refund_df[Refund_df['Cost Center'] == cost_center].copy()
+
+            if mmg_rows.empty:
+                final_rows.extend(group_df.to_dict(orient='records'))
+                continue
+
+            group_df['Transaction Date'] = pd.to_datetime(group_df['Transaction Date'], format='%d/%m/%Y', errors='coerce')
+            mmg_rows['Transaction Date'] = pd.to_datetime(mmg_rows['Transaction Date'], format='%d/%m/%Y', errors='coerce')
+            n = len(group_df)
+            used_indexes = set()
+
+            # Step 1: One-to-one direct matching
+            for i in range(n):
+                if i in used_indexes:
+                    continue
+
+                row = group_df.loc[i]
+                total = round(row['Total'], 2)
+                match = mmg_rows[(mmg_rows['MMG'] == -total) & (mmg_rows['Transaction Date'] == row['Transaction Date'])]
+
+                if not match.empty:
+                    matched_row = match.iloc[0]
+                    new_row = row.copy()
+                    new_row['Total'] = total
+                    new_row['Period'] = matched_row['Period']
+                    new_row['Vendor'] = matched_row['Vendor']
+                    new_row['Status/Reported GTO No.'] = matched_row['TS_ID']
+                    year = pd.to_datetime(matched_row['Period'], dayfirst=True).year
+                    new_row['Group'] = f"Minimum Guarantee Y{year}"
+                    final_rows.append(new_row.to_dict())
+                    used_indexes.add(i)
+
+            # Step 2: Consecutive group matching from largest to smallest
+            for size in reversed(range(2, n + 1)):
+                for start in range(n - size + 1):
+                    idx_range = list(range(start, start + size))
+                    if any(i in used_indexes for i in idx_range):
+                        continue
+
+                    subset = group_df.loc[idx_range]
+                    total_sum = subset['Total'].sum()
+                    total_sum_rounded = round(total_sum, 2)
+                    match = mmg_rows[mmg_rows['MMG'] == -total_sum_rounded]
+
+                    if not match.empty:
+                        matched_row = match.iloc[0]
+                        match_date = pd.to_datetime(matched_row['Transaction Date'])
+                        matched_sub = subset[subset['Transaction Date'] == match_date]
+
+                        if matched_sub.empty:
+                            continue
+
+                        base_row = matched_sub.iloc[0].copy()
+                        new_row = base_row.copy()
+                        new_row['Total'] = total_sum_rounded
+                        new_row['Period'] = matched_row['Period']
+                        new_row['Vendor'] = matched_row['Vendor']
+                        new_row['Status/Reported GTO No.'] = matched_row['TS_ID']
+                        year = pd.to_datetime(matched_row['Period'], dayfirst=True).year
+                        new_row['Group'] = f"Minimum Guarantee Y{year}"
+                        final_rows.append(new_row.to_dict())
+                        used_indexes.update(idx_range)
+
+            # Step 3: Add unmatched rows
+            for i in range(n):
+                if i not in used_indexes:
+                    final_rows.append(group_df.loc[i].to_dict())
+
+        result_df = pd.DataFrame(final_rows)
+        result_df['Transaction Date'] = pd.to_datetime(result_df['Transaction Date'], errors='coerce')
+        result_df = result_df.sort_values(by=['Cost Center', 'Transaction Date'])
+        result_df['Transaction Date'] = result_df['Transaction Date'].dt.strftime('%d/%m/%Y')
+        result_df['Group'] = result_df['Group'].fillna("Pending for user manual")
+        self.Minimum_df = result_df
+
+        return self.Minimum_df
