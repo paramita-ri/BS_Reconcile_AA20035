@@ -18,20 +18,29 @@ class Minimum():
         gto05 = self.GTO05_df.copy()
         #simplifie column name in aastar and gto05
         aastar = aastar.rename(columns={
-            'MRI or Anacle TransactionID':'TS_ID'
+            'MRI or Anacle TransactionID':'TS_ID',
+            'Period Name':'Period'
         })
         gto05 = gto05.rename(columns={
             'Reported GTO No.':'TS_ID',
             'Customer':'Vendor',
             'Adjusted MMG GP Amount':'MMG'
         })
+        aastar['Period'] = pd.to_datetime(
+            aastar['Period'],
+            format='%b-%y', errors='coerce'
+        )
+        balanced['Period'] = pd.to_datetime(
+            balanced['Period'],
+            format='%d/%m/%Y', errors='coerce'
+        )
         #drop row that has nan in critical column and left only column 
         #we want in aastar and gto05
         aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
         gto05 = gto05.query("MMG.notna() and MMG != 0")[['TS_ID', 'Vendor', 'MMG']]
         balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
         
-        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
+        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date','Period'], how='left')
         mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
         
         mergeMMG_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
@@ -46,20 +55,29 @@ class Minimum():
         gto05 = self.GTO05_df.copy()
         #simplifie column name in aastar and gto05
         aastar = aastar.rename(columns={
-            'MRI or Anacle TransactionID':'TS_ID'
+            'MRI or Anacle TransactionID':'TS_ID',
+            'Period Name':'Period'
         })
         gto05 = gto05.rename(columns={
             'Reported GTO No.':'TS_ID',
             'Customer':'Vendor',
             'COGS Refund':'Refund'
         })
+        aastar['Period'] = pd.to_datetime(
+            aastar['Period'],
+            format='%b-%y', errors='coerce'
+        )
+        balanced['Period'] = pd.to_datetime(
+            balanced['Period'],
+            format='%d/%m/%Y', errors='coerce'
+        )
         #drop row that has nan in critical column and left only column 
         #we want in aastar and gto05
         aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
         gto05 = gto05.query("Refund.notna() and Refund != 0")[['TS_ID', 'Vendor', 'Refund']]
         balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
         
-        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
+        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date','Period'], how='left')
         mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
         
         mergeRefund_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
@@ -257,3 +275,4 @@ class Minimum():
         self.Minimum_df = result_df
 
         return self.Minimum_df
+    
