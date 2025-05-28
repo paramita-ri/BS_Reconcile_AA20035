@@ -47,6 +47,10 @@ class ReconciliationApp:
                                       command=self.start_reconciliation)
         self.start_button.pack(pady=5)
         
+        self.report_button = ttk.Button(self.button_frame, text="Get Report",
+                               command=self.start_get_report)
+        self.report_button.pack(pady=5)
+        
         self.exit_button = ttk.Button(self.button_frame, text="Exit", 
                                     command=self.root.destroy)
         self.exit_button.pack(pady=5)
@@ -148,6 +152,7 @@ class ReconciliationApp:
             minimum_df = minimum.getMinimum_df()
             MMG_df = minimum.getMMG_df()
             Refund_df = minimum.getRefund_df()
+            MMG_Refund = minimum.getMMG_Refund()
             
             # Step 7: Generate report
             self.update_progress(95, "Generating reports...")
@@ -173,6 +178,40 @@ class ReconciliationApp:
             
             # Show error in GUI messagebox
             self.message_queue.put(('error', "Reconciliation Failed", str(e)))
+            
+    def start_get_report(self):
+        if self.running:
+            return
+
+        self.running = True
+        self.start_button.config(state=tk.DISABLED)
+        self.report_button.config(state=tk.DISABLED)
+        threading.Thread(target=self.run_get_report, daemon=True).start()
+
+    def run_get_report(self):
+        try:
+            self.update_progress(0, "Starting report generation...")
+            
+            # Step: Get files
+            get_input = GetFileAndPeriod(self)
+            self.update_progress(20, "Starting select file...")
+            AAcurrent_df, AAStar_df, LastReconcile_df, GTO05_df = get_input.getFile()
+            
+            self.update_progress(50, "Get File Success...")
+            # Generate report
+            self.update_progress(75, "Generating reports...")
+
+
+            self.message_queue.put(('done', "Report generated successfully!"))
+            self.update_progress(100, "Report generation complete!")
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.log_message(f"Error: {str(e)}")
+            self.message_queue.put(('done', None))
+            self.update_progress(0, "Report generation failed")
+            self.message_queue.put(('error', "Get Report Failed", str(e)))
     
     def process_queue(self):
         """Check for messages from the worker thread and update GUI"""
@@ -189,11 +228,14 @@ class ReconciliationApp:
                 elif message[0] == 'done':
                     self.running = False
                     self.start_button.config(state=tk.NORMAL)
+                    self.report_button.config(state=tk.NORMAL)
+
                     if message[1]:
                         messagebox.showinfo("Success", message[1])
                 elif message[0] == 'error':
                     self.running = False
                     self.start_button.config(state=tk.NORMAL)
+                    self.report_button.config(state=tk.NORMAL)
                     messagebox.showerror(message[1], message[2])
         except queue.Empty:
             pass

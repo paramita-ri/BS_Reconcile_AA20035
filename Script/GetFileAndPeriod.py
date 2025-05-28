@@ -234,3 +234,29 @@ class GetFileAndPeriod():
 
         sorted_df.reset_index(drop=True, inplace=True)
         self.AAStar_df = sorted_df
+        
+    def getNewReconcileFile(self):
+        # Ask user to select a file
+        file_path = filedialog.askopenfilename(
+            parent=self.parent_app.root,
+            title="Select Reconcile Report file",
+            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+        )
+
+        if not file_path:
+            messagebox.showerror("Error", "No file selected. Process cancelled.")
+            raise Exception("Reconcile file selection cancelled.")
+
+        self.newReconcile = file_path
+        self.log_message(f"Selected New Reconcile file: {file_path}")
+
+        try:
+            self.newReconcile_df = pd.read_excel(
+                file_path,
+                sheet_name="Reconcile Report",
+                dtype={'Cost Center': str, 'LOB': str}
+            )
+            self.log_message("New Reconcile file loaded successfully.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read the 'Reconcile Report' sheet: {str(e)}")
+            raise
