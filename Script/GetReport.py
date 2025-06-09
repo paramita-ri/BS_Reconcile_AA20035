@@ -41,11 +41,11 @@ class GetReport():
         )
         NewReconcile = NewReconcile.sort_values(by=['Cost Center', 'Transaction Date'])
     
-        #NewReconcile['Transaction Date'] = NewReconcile['Transaction Date'].dt.strftime('%d/%m/%Y')
-        NewReconcile['Period'] = pd.to_datetime(
+        NewReconcile['Transaction Date'] = NewReconcile['Transaction Date'].dt.strftime('%d/%m/%Y')
+        """NewReconcile['Period'] = pd.to_datetime(
             NewReconcile['Period'],
             format='%d/%m/%Y', errors='coerce'
-        )
+        )"""
         NewReconcile = NewReconcile.reset_index(drop=True) 
         self.NewReconcile = NewReconcile
         self.log_message("New reconciliation report created")
@@ -261,13 +261,13 @@ class GetReport():
 
         all_dfs = {}
         if newReconcile is not None:
-            all_dfs["New Reconcile"] = newReconcile
+            all_dfs["Reconcile Report"] = newReconcile
         if groupby is not None:
-            all_dfs["Groupby Summary"] = groupby
+            all_dfs["Summary current month"] = groupby
         if onlypending is not None:
-            all_dfs["Only Pending"] = onlypending
+            all_dfs["Food Court PendingBills"] = onlypending
         if onlyminimum is not None:
-            all_dfs["Only Minimum Guarantee"] = onlyminimum
+            all_dfs["Minimum Guarantee"] = onlyminimum
         if MMG_df is not None:
             all_dfs["MMG_df"] = MMG_df
         if Refund_df is not None:
@@ -281,3 +281,123 @@ class GetReport():
                 self.log_message("Report saving was cancelled")
         
         self.update_progress(100, "Reports generation complete")
+        
+        
+    def genNewReport(self, InputReport, MMG_df, Refund_df):
+        self.update_progress(0, "Preparing reports...")
+        
+        newReconcile = InputReport.copy()
+        groupby = self.getGroupby()
+        onlypending = self.getOnlyPending()
+        onlyminimum = self.getOnlyMinimum()
+        MMG_df = MMG_df.copy()
+        Refund_df = Refund_df.copy()
+
+
+        all_dfs = {}
+        if newReconcile is not None:
+            all_dfs["Reconcile Report"] = newReconcile
+        if groupby is not None:
+            all_dfs["Summary current month"] = groupby
+        if onlypending is not None:
+            all_dfs["Food Court PendingBills"] = onlypending
+        if onlyminimum is not None:
+            all_dfs["Minimum Guarantee"] = onlyminimum
+        if MMG_df is not None:
+            all_dfs["MMG_df"] = MMG_df
+        if Refund_df is not None:
+            all_dfs["Refund_df"] = Refund_df
+            
+        self.update_progress(50, "Gen New reports...")
+        
+        if all_dfs:
+            saved_path = self.save_to_excel(all_dfs, "Save All Reports", "ReconcileReport.xlsx")
+            if saved_path:
+                self.log_message(f"Reports successfully saved to: {saved_path}")
+            else:
+                self.log_message("Report saving was cancelled")
+        
+        self.update_progress(100, "Reports generation complete")
+        
+    def getReportFromInput(self, inputReport):
+        """Generate reports from an input DataFrame (like from getInputReport())"""
+        self.update_progress(95, "Preparing reports from input...")
+        
+        # Use the input report as the base
+        newReconcile = inputReport.copy()
+        
+        # Process the input report (similar to getNewReconcile() but without concatenation)
+        newReconcile['Cost Center'] = newReconcile['Cost Center'].astype(str).str.zfill(5)
+        newReconcile['Transaction Date'] = pd.to_datetime(
+            newReconcile['Transaction Date'],
+            format='%d/%m/%Y', errors='coerce'
+        )
+        newReconcile = newReconcile.sort_values(by=['Cost Center', 'Transaction Date'])
+        newReconcile['Period'] = pd.to_datetime(
+            newReconcile['Period'],
+            format='%d/%m/%Y', errors='coerce'
+        )
+        newReconcile = newReconcile.reset_index(drop=True)
+        
+        # Generate other reports from this input
+        groupby = self._getGroupbyFromDF(newReconcile)
+        onlypending = self._getOnlyPendingFromDF(newReconcile)
+        onlyminimum = self._getOnlyMinimumFromDF(newReconcile)
+        
+        all_dfs = {
+            "Reconcile Report": newReconcile,
+            "Summary current month": groupby,
+            "Food Court PendingBills": onlypending,
+            "Minimum Guarantee": onlyminimum
+        }
+        
+        if self.MMG_df is not None:
+            all_dfs["MMG_df"] = self.MMG_df
+        if self.Refund_df is not None:
+            all_dfs["Refund_df"] = self.Refund_df
+
+        if all_dfs:
+            saved_path = self.save_to_excel(all_dfs, "Save All Reports", "ReconcileReport.xlsx")
+            if saved_path:
+                self.log_message(f"Reports successfully saved to: {saved_path}")
+            else:
+                self.log_message("Report saving was cancelled")
+        
+        self.update_progress(100, "Reports generation complete")
+        return newReconcile
+
+    # Helper methods for processing the input DataFrame
+    def _getGroupbyFromDF(self, df):
+        """Create groupby summary from a DataFrame"""
+        if 'Group' not in df.columns or 'Transaction Date' not in df.columns or 'Total' not in df.columns:
+            return None
+
+        self.log_message("Creating groupby summary from input...")
+        pivot_df = pd.pivot_table(
+            df,
+            index='Group',
+            columns=pd.Grouper(key='Transaction Date', freq='YE'),
+            values='Total',
+            aggfunc='sum',
+            fill_value=0
+        )
+        pivot_df.columns = pivot_df.columns.year
+        return pivot_df.reset_index()
+
+    def _getOnlyPendingFromDF(self, df):
+        """Filter pending bills from a DataFrame"""
+        if 'Group' not in df.columns:
+            return None
+
+        self.log_message("Filtering pending bills from input...")
+        pattern = r'^ยอดขาย Food Court.*ที่ลูกค้ายังไม่มาวางบิล'
+        return df[df['Group'].str.contains(pattern, regex=True, case=False, na=False)].reset_index(drop=True)
+
+    def _getOnlyMinimumFromDF(self, df):
+        """Filter minimum guarantee from a DataFrame"""
+        if 'Group' not in df.columns:
+            return None
+        
+        self.log_message("Filtering minimum guarantee from input...")
+        mask = df['Group'].str.contains("Minimum Guarantee", case=False, na=False)
+        return df[mask].reset_index(drop=True)

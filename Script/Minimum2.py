@@ -30,27 +30,18 @@ class Minimum2():
             'Customer':'Vendor',
             'Adjusted MMG GP Amount':'MMG'
         })
-        aastar['Period'] = pd.to_datetime(
-            aastar['Period'],
-            format='%b-%y', errors='coerce'
-        )
-        balanced['Period'] = pd.to_datetime(
-            balanced['Period'],
-            format='%d/%m/%Y', errors='coerce'
-        )
         #drop row that has nan in critical column and left only column 
         #we want in aastar and gto05
-        aastar = aastar.dropna(subset=['TS_ID'])[['Period','Cost Center', 'Transaction Date', 'TS_ID']]
+        aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
         gto05 = gto05.query("MMG.notna() and MMG != 0")[['TS_ID', 'Vendor', 'MMG']]
-        balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
+        balanced = balanced[['Cost Center', 'Transaction Date']]
         
-        mergeID_df = pd.merge(balanced, aastar, on=['Period','Cost Center', 'Transaction Date'], how='left')
+        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
         mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
+        mergeID_df = mergeID_df.drop_duplicates()
         
         mergeMMG_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
         mergeMMG_df = mergeMMG_df.dropna(subset=['MMG', 'Vendor'])
-        mergeMMG_df['Period'] = mergeMMG_df['Period'].dt.strftime('%d/%m/%Y')
-        mergeID_df['Period'] = mergeID_df['Period'].dt.strftime('%d/%m/%Y')
         self.MergeID = mergeID_df
         self.MMG_df = mergeMMG_df
         return self.MMG_df 
@@ -68,28 +59,21 @@ class Minimum2():
         gto05 = gto05.rename(columns={
             'Reported GTO No.':'TS_ID',
             'Customer':'Vendor',
-            'COGS Refund':'Refund'
+            'COGS Refund':'Refund',
+            'Adjusted MMG GP Amount':'MMG'
         })
-        aastar['Period'] = pd.to_datetime(
-            aastar['Period'],
-            format='%b-%y', errors='coerce'
-        )
-        balanced['Period'] = pd.to_datetime(
-            balanced['Period'],
-            format='%d/%m/%Y', errors='coerce'
-        )
         #drop row that has nan in critical column and left only column 
         #we want in aastar and gto05
-        aastar = aastar.dropna(subset=['TS_ID'])[['Period','Cost Center', 'Transaction Date', 'TS_ID']]
-        gto05 = gto05.query("Refund.notna() and Refund != 0")[['TS_ID', 'Vendor', 'Refund']]
-        balanced = balanced[['Period', 'Cost Center', 'Transaction Date']]
+        aastar = aastar.dropna(subset=['TS_ID'])[['Cost Center', 'Transaction Date', 'TS_ID']]
+        gto05 = gto05[['TS_ID', 'Vendor', 'Refund', 'MMG']]
+        balanced = balanced[['Cost Center', 'Transaction Date']]
         
-        mergeID_df = pd.merge(balanced, aastar, on=['Period', 'Cost Center', 'Transaction Date'], how='left')
+        mergeID_df = pd.merge(balanced, aastar, on=['Cost Center', 'Transaction Date'], how='left')
         mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
+        mergeID_df = mergeID_df.drop_duplicates()
         
         mergeRefund_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
-        mergeRefund_df = mergeRefund_df.dropna(subset=['Refund', 'Vendor'])
-        mergeRefund_df['Period'] = mergeRefund_df['Period'].dt.strftime('%d/%m/%Y')
+        mergeRefund_df = mergeRefund_df.dropna(subset=['Vendor', 'Refund', 'MMG'])
         self.Refund_df = mergeRefund_df
         return self.Refund_df 
           
@@ -271,13 +255,14 @@ class Minimum2():
 
 if __name__ == "__main__":
     minimum = Minimum2()
-    minimum_df = minimum.getMinimum_df()
-    MMG_df = minimum.getMMG_df()
+    #minimum_df = minimum.getMinimum_df()
+    #MMG_df = minimum.getMMG_df()
     Refund_df = minimum.getRefund_df()
     #Combine = minimum.getCombined_df_by_TS_ID()
-    minimum.display_df("Merge_ID", minimum.MergeID)
+    #minimum.display_df("Merge_ID", minimum.MergeID)
     #minimum.display_df("Refund_df",Refund_df)
-    minimum.save_to_excel(minimum.MergeID)
+    #minimum.save_to_excel(minimum.MergeID)
+    #minimum.save_to_excel(MMG_df)
     """  minimum.save_to_excel(MMG_df)
-    minimum.save_to_excel(Refund_df)"""
-    
+    """
+    minimum.save_to_excel(Refund_df)

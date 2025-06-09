@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 import queue
 
-class GetFileAndPeriod():
+class GenReport():
     def __init__(self, parent_app=None):
         self.parent_app = parent_app
         self.Period_date = None        
@@ -21,11 +21,8 @@ class GetFileAndPeriod():
             "ReconcileLastMonth": None,
             "GTO05": None,
         }
-        self.Report_file_path = { "InputReport" : None}
-        self.InputReport = None
         self.period_selected = threading.Event()
         self.files_selected = threading.Event()
-        self.input_report_selected = threading.Event()
         self.result_queue = queue.Queue()
 
     def log_message(self, message):
@@ -201,111 +198,3 @@ class GetFileAndPeriod():
             dtype={'Cost Center Number': str, 'LOB': str},
             header=start_row + 1
         )
-    
-    def CleanDate(self, df):
-        df['Gl_Date'] = pd.to_datetime(
-            df['Gl_Date'],
-            format='%d/%m/%Y %I:%M:%S %p',
-            errors='coerce'
-        ).dt.strftime('%d/%m/%Y')
-        
-        df['Transaction Date'] = pd.to_datetime(
-            df['Transaction Date'],
-            format='%d-%b-%y',
-            errors='coerce'
-        ).dt.strftime('%d/%m/%Y')
-
-        df['Transaction Date'] = np.where(
-            df['Transaction Date'].isna() | (df['Transaction Date'] == ''),
-            df['Gl_Date'],
-            df['Transaction Date']
-        )
-    
-    def getAAStar(self):
-        aaPrevious = self.AAPrevious_df.copy()
-        aaCurrent = self.AACurrent_df.copy()
-
-        merged_df = pd.concat([aaPrevious, aaCurrent], ignore_index=True)
-
-        merged_df['Transaction Date'] = pd.to_datetime(
-            merged_df['Transaction Date'],
-            format='%d/%m/%Y', errors='coerce'
-        )
-
-        sorted_df = merged_df.sort_values(by=['Cost Center', 'Transaction Date'])
-        sorted_df['Transaction Date'] = sorted_df['Transaction Date'].dt.strftime('%d/%m/%Y')
-
-        sorted_df.reset_index(drop=True, inplace=True)
-        self.AAStar_df = sorted_df
-        
-    def getInputReport(self):
-        """Get a file path from user, read the 'Reconcile Report' sheet into self.InputReport,
-        and return the DataFrame.
-        
-        Returns:
-            pd.DataFrame: self.InputReport containing the input report data with 
-                        'Cost Center' and 'LOB' as strings.
-        """
-        # Create an event to wait for file selection
-        input_report_selected = threading.Event()
-        self.result_queue = queue.Queue()  # Reinitialize queue if needed
-        
-        # Request the main thread to show file dialog
-        self.parent_app.root.after(0, self._show_input_report_dialog)
-        
-        # Wait for the user to select the file
-        self.input_report_selected.wait()
-        self.input_report_selected.clear()
-        
-        # Check if we got an error
-        if not self.result_queue.empty():
-            error = self.result_queue.get()
-            if isinstance(error, Exception):
-                raise error
-        
-        # Read the Excel file
-        self.update_progress(20, "Loading Input Report file...")
-        try:
-            self.InputReport = pd.read_excel(
-                self.Report_file_path["InputReport"],
-                sheet_name="Reconcile Report",
-                dtype={'Cost Center': str, 'LOB': str}
-            )
-            MMG_df = pd.read_excel(
-                self.Report_file_path["InputReport"],
-                sheet_name="MMG_df",
-                dtype={'Cost Center': str}
-            )
-            Refund_df = pd.read_excel(
-                self.Report_file_path["InputReport"],
-                sheet_name="Refund_df",
-                dtype={'Cost Center': str}
-            )
-            
-            self.log_message("Input Report loaded successfully")
-            return self.InputReport, MMG_df,Refund_df
-        except Exception as e:
-            error_msg = f"Error loading Input Report: {str(e)}"
-            self.log_message(error_msg)
-            raise Exception(error_msg)
-
-    def _show_input_report_dialog(self):
-        """Show file dialog for input report (runs in main thread)"""
-        try:
-            file_path = filedialog.askopenfilename(
-                parent=self.parent_app.root,
-                title="Select Input Report file",
-                filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
-            )
-            
-            if not file_path:
-                self.result_queue.put(Exception("Input Report file selection cancelled."))
-                return
-                
-            self.Report_file_path["InputReport"] = file_path
-            self.log_message(f"Selected Input Report file: {file_path}")
-            self.result_queue.put(None)  # Signal success
-            self.input_report_selected.set()  # Or use a different event if needed
-        except Exception as e:
-            self.result_queue.put(e)
-        

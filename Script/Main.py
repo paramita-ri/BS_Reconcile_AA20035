@@ -4,7 +4,6 @@ from Combine import *
 from PendingBills import *
 from Balance import *
 from Minimum import *
-from GetReconcile import *
 from GetReport import *
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -193,12 +192,13 @@ class ReconciliationApp:
             self.update_progress(0, "Starting report generation...")
             
             # Step: Get files
-            get_input = GetFileAndPeriod(self)
+            getReportFile = GetFileAndPeriod(self)
             self.update_progress(20, "Starting select file...")
-            AAcurrent_df, AAStar_df, LastReconcile_df, GTO05_df = get_input.getFile()
-            
+            InputReport, MMG_df, Refund_df = getReportFile.getInputReport()
             self.update_progress(50, "Get File Success...")
             # Generate report
+            GenReport = GetReport(None, None, None, None, self)
+            GenReport.getReportFromInput(InputReport)
             self.update_progress(75, "Generating reports...")
 
 
