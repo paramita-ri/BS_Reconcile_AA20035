@@ -47,13 +47,23 @@ class GetReport():
         gto05 = gto05[['TS_ID', 'Vendor', 'Refund','MMG']]
         reconcile = reconcile[['Cost Center', 'Transaction Date']]
         
-        mergeID_df = pd.merge(reconcile, aastar, on=['Cost Center', 'Transaction Date'], how='left')
-        mergeID_df = mergeID_df.dropna(subset=['TS_ID'])
+        # First get TS_IDs from aastar
+        merged_aastar = pd.merge(reconcile, aastar, on=['Cost Center', 'Transaction Date'], how='left')
+        merged_aastar = merged_aastar.dropna(subset=['TS_ID'])
+
+        # Now get TS_IDs from Newreconcile if already present
+        existing_ts_id_rows = Newreconcile.dropna(subset=['Status/Reported GTO No.'])[
+            ['Cost Center', 'Transaction Date', 'Status/Reported GTO No.']
+        ].rename(columns={'Status/Reported GTO No.': 'TS_ID'})
+
+        # Combine both
+        mergeID_df = pd.concat([merged_aastar[['Cost Center', 'Transaction Date', 'TS_ID']], existing_ts_id_rows], ignore_index=True)
         mergeID_df = mergeID_df.drop_duplicates()
+
         
         mergeMiniGTO_df = pd.merge(mergeID_df, gto05, on=['TS_ID'], how='left')
-        mergeMiniGTO_df = mergeMiniGTO_df.dropna(subset=['Refund', 'Vendor','MMG'])
-        # Drop rows where both Refund and MMG are 0 or NaN
+        mergeMiniGTO_df = mergeMiniGTO_df.dropna(subset=['Refund','MMG'])
+        #Drop rows where both Refund and MMG are 0 or NaN
         mergeMiniGTO_df = mergeMiniGTO_df[
             ~((mergeMiniGTO_df['Refund'].fillna(0) == 0) & (mergeMiniGTO_df['MMG'].fillna(0) == 0))
         ]

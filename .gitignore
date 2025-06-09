@@ -1,0 +1,20 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+build/
+dist/
+*.spec
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# VS Code settings
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
