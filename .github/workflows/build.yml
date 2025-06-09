@@ -31,4 +31,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Reconcile_APP
-        path: dist/MyApp.exe
+        path: dist/Reconcile_APP.exe
