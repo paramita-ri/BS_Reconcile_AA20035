@@ -1,4 +1,4 @@
-name: Build EXE
+name: Build DMG
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: macos-latest
 
     steps:
     - name: Checkout repo
@@ -23,12 +23,21 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: Build exe with PyInstaller
+    - name: Build macOS app bundle with PyInstaller
       run: |
         pyinstaller --onefile --windowed Script_final/Main.py --name BS_Reconciliation_APP
+
+    - name: Create DMG from app bundle
+      run: |
+        mkdir -p dmg
+        # Create a temporary directory for the app bundle
+        APP_BUNDLE=dist/BS_Reconciliation_APP.app
+        DMG_PATH=dmg/BS_Reconciliation_APP.dmg
+        # Use hdiutil to create the DMG
+        hdiutil create -volname BS_Reconciliation_APP -srcfolder "$APP_BUNDLE" -ov -format UDZO "$DMG_PATH"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: BS_Reconciliation_APP
-        path: dist/BS_Reconciliation_APP.exe
+        name: BS_Reconciliation_APP_DMG
+        path: dmg/BS_Reconciliation_APP.dmg
