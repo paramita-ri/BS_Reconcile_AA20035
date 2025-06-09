@@ -25,10 +25,10 @@ jobs:
 
     - name: Build exe with PyInstaller
       run: |
-        pyinstaller --onefile --windowed Script_final/Main.py --name Reconcile_APP
+        pyinstaller --onefile --windowed Script_final/Main.py --name BS_Reconciliation_APP
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Reconcile_APP
-        path: dist/Reconcile_APP.exe
+        name: BS_Reconciliation_APP
+        path: dist/BS_Reconciliation_APP.exe
