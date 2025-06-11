@@ -8,7 +8,8 @@ class AAProcess():
         self.Period_Date = Period_Date
         self.AAPivot_df = None
         self.AAForCombine_df = None
-        
+  
+    #make pivot by Amount from AA       
     def getAApivot(self):
         pivot_df = self.AACurrent_df.copy()
         pivot_df = pd.pivot_table(
@@ -30,6 +31,7 @@ class AAProcess():
 
         return self.AAForCombine_df
     
+    #fill column after pivot from for combine with reconcile report
     def FillColumn(self):
     
         fillColumn_df = self.AAPivot_df.copy()
